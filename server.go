@@ -52,9 +52,10 @@ func (backServer *BackServerType) RunGracefullShutdown(cfg map[string]string, AP
 		<-sigint
 
 		// We received an interrupt signal, shut down.
+		Logger.Info("HTTP server Shutdown by interrupt signal")
 		if err := backServer.srv.Shutdown(context.Background()); err != nil {
 			// Error from closing listeners, or context timeout:
-			Logger.Printf("HTTP server Shutdown: %v", err)
+			Logger.Infof("HTTP server Shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
