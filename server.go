@@ -52,9 +52,6 @@ func (backServer *BackServerType) SetEndPoint(API APISettings) {
 	// Set PathPrefix for URL
 	mux := backServer.gmux.PathPrefix(backServer.Cfg["BACKEND_SERVER_URL_PREFIX"]).Subrouter()
 
-	for name, _ := range backServer.mw {
-		Logger.Printf("MW: %s loaded", name)
-	}
 	// Set endpoints
 	for path, methods := range API.GetRouteList() {
 		for method, routeConfig := range methods {
