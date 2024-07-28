@@ -1,12 +1,14 @@
 package server
 
 import (
-	gmux "github.com/gorilla/mux"
-	logging "github.com/kthucydi/bs_go_logrus"
-	mw "github.com/kthucydi/bs_go_server/middleware"
+	"context"
 	"net/http"
 	"os"
 	"os/signal"
+
+	gmux "github.com/gorilla/mux"
+	logging "github.com/kthucydi/bs_go_logrus"
+	mw "github.com/kthucydi/bs_go_server/middleware"
 )
 
 var (
@@ -18,19 +20,51 @@ var (
 func (backServer *BackServerType) Run(cfg map[string]string, API APISettings) {
 
 	backServer.Init(cfg, API)
-	Logger.Print("from server: Init success")
-
-	Logger.Print("from ListenAndServe:set endpoint success, run")
+	Logger.Infof("server: set endpoint success, try runing at %s port", backServer.Cfg["BACKEND_SERVER_PORT"])
 
 	go func() {
-		if err := backServer.srv.ListenAndServe(); err != nil {
-			Logger.Error("from ListenAndServe:", err)
+		if err := backServer.srv.ListenAndServe(); err != http.ErrServerClosed {
+			Logger.Fatalf("(exit) error server: ListenAndServe: %v", err)
 		}
 	}()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
+
+	if err := backServer.srv.Shutdown(context.Background()); err != nil {
+		// Error from closing listeners, or context timeout:
+		Logger.Printf("HTTP server Shutdown: %v", err)
+	}
+}
+
+// Run function sets endpoints and runs the server
+func (backServer *BackServerType) RunGracefullShutdown(cfg map[string]string, API APISettings) {
+
+	backServer.Init(cfg, API)
+	Logger.Infof("server: set endpoint success, try to runing at %s port", backServer.Cfg["BACKEND_SERVER_PORT"])
+
+	idleConnsClosed := make(chan struct{})
+
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+
+		// We received an interrupt signal, shut down.
+		if err := backServer.srv.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			Logger.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	if err := backServer.srv.ListenAndServe(); err != http.ErrServerClosed {
+		// Error starting or closing listener:
+		Logger.Fatalf("HTTP server ListenAndServe: %v", err)
+	}
+
+	<-idleConnsClosed
 }
 
 func (backServer *BackServerType) Init(cfg map[string]string, API APISettings) {
