@@ -84,10 +84,14 @@ func (backServer *BackServerType) Init(cfg map[string]string, API APISettings) {
 
 // SetEndPoint Set endpoint from api config structure
 func (backServer *BackServerType) SetEndPoint(API APISettings) {
+	var mux *gmux.Router
 
-	// Set PathPrefix for URL
-	mux := backServer.gmux.PathPrefix(backServer.Cfg["BACKEND_SERVER_URL_PREFIX"]).Subrouter()
-
+	if backServer.Cfg["BACKEND_SERVER_URL_PREFIX"] != "/" {
+		// Set PathPrefix for URL
+		mux = backServer.gmux.PathPrefix(backServer.Cfg["BACKEND_SERVER_URL_PREFIX"]).Subrouter()
+	} else {
+		mux = backServer.gmux.PathPrefix("").Subrouter()
+	}
 	// Set endpoints
 	for path, methods := range API.GetRouteList() {
 		for method, routeConfig := range methods {
