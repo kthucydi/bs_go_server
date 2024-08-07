@@ -90,7 +90,7 @@ func (backServer *BackServerType) SetEndPoint(API APISettings) {
 		// Set PathPrefix for URL
 		mux = backServer.gmux.PathPrefix(backServer.Cfg["BACKEND_SERVER_URL_PREFIX"]).Subrouter()
 	} else {
-		mux = backServer.gmux.PathPrefix("").Subrouter()
+		mux = backServer.gmux
 	}
 	// Set endpoints
 	for path, methods := range API.GetRouteList() {
