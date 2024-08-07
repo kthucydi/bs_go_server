@@ -99,8 +99,10 @@ func (backServer *BackServerType) SetEndPoint(API APISettings) {
 		}
 	}
 
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	// fileServer := http.FileServer(http.Dir("./ui/static/"))
+	// mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	// Serve static files
+	backServer.gmux.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./ui/static/"))))
 
 	// Print Allowed methods in headers
 	if value, ok := backServer.Cfg["USE_INNER_CORS"]; ok && value == "true" {
